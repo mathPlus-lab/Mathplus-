@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MathPlus — Dark v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Reset & base */
+*{box-sizing:border-box;margin:0;padding:0;font-family:"Poppins",sans-serif}
+html,body{height:100%;width:100%;background:#07080b;color:#eef2ff;overflow:hidden}
+a{cursor:pointer}
+
+/* ===== Audio toggle (polished iOS-like, smart position) ===== */
+.audio-toggle {
+  position:fixed;
+  right:20px;
+  top:22px;
+  z-index:130;
+  width:54px;
+  height:54px;
+  border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+  border:1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 12px 36px rgba(2,6,23,0.6);
+  backdrop-filter: blur(10px) saturate(120%);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, opacity .2s;
+  cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.audio-toggle:hover{ transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 50px rgba(2,6,23,0.7); }
+.audio-toggle .icon{font-size:20px;color:#e8f0ff;pointer-events:none; }
+.audio-toggle.muted{ opacity:0.9; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border:1px solid rgba(255,255,255,0.03); }
+@media (max-width:600px){
+  .audio-toggle { right:14px; top:16px; width:48px; height:48px; border-radius:12px; }
+}
+
+/* Entrance pulse when toggled */
+.audio-toggle.pulse { animation: audioPulse .6s ease; }
+@keyframes audioPulse { 0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* ===== Background plates & sheen ===== */
+.bg-plate{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(900px 480px at 12% 22%, rgba(88,138,255,0.10), transparent 12%),
+    radial-gradient(1000px 540px at 82% 78%, rgba(170,98,255,0.07), transparent 14%);
+  filter: blur(48px) saturate(120%);
+  transform: translate3d(0,0,0);
+  transition:transform .12s linear;
+  opacity:0; animation:bgFadeIn 1.2s ease forwards;
+}
+@keyframes bgFadeIn{ to{opacity:1} }
+.bg-sheen{position:fixed;inset:-25%;z-index:1;pointer-events:none;background:linear-gradient(120deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));mix-blend-mode:screen;filter:blur(56px);animation:sheen 24s linear infinite;opacity:0;animation-fill-mode:forwards;}
+@keyframes sheen{0%{transform:translateX(-8%)}50%{transform:translateX(8%)}100%{transform:translateX(-8%)}}
+
+/* Spotlight */
+.spotlight{position:fixed;left:50%;top:18%;width:720px;height:720px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;background:radial-gradient(circle at var(--sx,50%) var(--sy,18%), rgba(255,255,255,0.048), transparent 40%);filter:blur(92px);transition:opacity .3s linear;opacity:0}
+
+/* Bubbles */
+.login-bubble{position:absolute;border-radius:50%;mix-blend-mode:screen;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,0.35);animation:rise 14s linear infinite;opacity:0}
+@keyframes rise{0%{transform:translateY(110vh) scale(.6);opacity:0}10%{opacity:.35}50%{opacity:.85}100%{transform:translateY(-30vh) scale(1);opacity:0}}
+
+/* ===== Login Screen & Auth Card ===== */
+#loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(7,8,11,0.6), rgba(7,8,11,0.85));transition:opacity .6s ease,visibility .6s ease}
+#loginScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.auth-card{width:520px;border-radius:20px;padding:36px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(18px) saturate(120%);box-shadow:0 50px 160px rgba(2,6,23,0.6);transform:translateY(18px) scale(.98);opacity:0}
+@keyframes cardIn{from{opacity:0;transform:translateY(26px) scale(.98);filter:blur(6px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes cardGlow{0%{box-shadow:0 40px 120px rgba(2,6,23,0.45)}50%{box-shadow:0 50px 160px rgba(90,138,255,0.12)}100%{box-shadow:0 40px 120px rgba(2,6,23,0.45)}}
+
+/* Auth content */
+.auth-title{font-size:22px;font-weight:800;color:#eef2ff;margin-bottom:6px}
+.auth-sub{color:rgba(255,255,255,0.72);margin-bottom:18px}
+.input-box{margin-bottom:12px}
+.input-box input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));color:#eef2ff}
+.input-box input::placeholder{color:rgba(255,255,255,0.45)}
+.auth-btn{width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(90deg,#5a8aff,#aa62ff);color:#fff;font-weight:700;box-shadow:0 12px 36px rgba(90,138,255,0.12)}
+.link-small{margin-top:12px;text-align:center;color:rgba(255,255,255,0.78)}
+
+/* ===== App container (same as before) ===== */
+#app{position:fixed;inset:0;z-index:40;display:none;overflow:auto}
+.app-wrap{width:96vw;height:92vh;margin:4vh auto;border-radius:20px;display:grid;grid-template-columns:260px 1fr;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 30px 100px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(18px) saturate(120%)}
+.sidebar{padding:22px;display:flex;flex-direction:column;gap:16px;border-left:1px solid rgba(255,255,255,0.02)}
+.logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#5a8aff,#aa62ff);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:22px}
+.nav{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.nav button{padding:12px;border-radius:12px;border:none;background:transparent;color:rgba(255,255,255,0.9);font-weight:700;text-align:left}
+.nav button.active,.nav button:hover{background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));transform:translateX(-6px)}
+
+/* Main & cards simplified */
+.main{padding:24px;overflow:auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.page-title{font-size:20px;font-weight:800}
+.desc{color:rgba(255,255,255,0.85);font-weight:600;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.03);color:rgba(255,255,255,0.95);margin-bottom:12px}
+.exercise{margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)}
+.q{font-weight:700;color:#eef4ff}
+.input-answer{margin-top:8px;display:flex;gap:8px;align-items:center}
+.input-answer input{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.03);color:#fff;min-width:140px}
+.check{padding:8px 10px;border-radius:10px;border:none;background:linear-gradient(90deg,#5a8aff,#aa62ff);color:#fff;cursor:pointer;font-weight:700}
+
+/* responsive */
+@media (max-width:1000px){.app-wrap{grid-template-columns:1fr;height:94vh}.grid{grid-template-columns:1fr}.sidebar{flex-direction:row;overflow:auto}}
+</style>
+</head>
+<body>
+<div class="app-root">
+  <div class="bg-plate" id="bgPlate"></div>
+  <div class="bg-sheen" id="bgSheen"></div>
+  <div class="spotlight" id="spotlight" style="--sx:50%;--sy:18%;opacity:0"></div>
+
+  <!-- audio toggle (smart safe position) -->
+  <div class="audio-toggle" id="audioToggle" title="Activer / Couper le son" aria-label="Activer ou couper le son">
+    <div class="icon" id="audioIcon">🔈</div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" role="dialog" aria-modal="true">
+    <div class="login-lights" aria-hidden="true"></div>
+
+    <!-- decorative colorful bubbles -->
+    <div class="login-bubble" id="b1" style="width:120px;height:120px;left:6%;top:65%;background:radial-gradient(circle,#5a8aff,#2fb9ff);animation-duration:18s"></div>
+    <div class="login-bubble" id="b2" style="width:64px;height:64px;left:22%;top:72%;background:radial-gradient(circle,#aa62ff,#ff7bd2);animation-duration:13s;opacity:0.9"></div>
+    <div class="login-bubble" id="b3" style="width:150px;height:150px;left:48%;top:78%;background:radial-gradient(circle,#2fd7c7,#5a8aff);animation-duration:20s;opacity:0.85"></div>
+    <div class="login-bubble" id="b4" style="width:82px;height:82px;left:74%;top:71%;background:radial-gradient(circle,#ffd36b,#ff7bd2);animation-duration:14s;opacity:0.75"></div>
+    <div class="login-bubble" id="b5" style="width:46px;height:46px;left:88%;top:66%;background:radial-gradient(circle,#7be36b,#2fd7c7);animation-duration:11s;opacity:0.7"></div>
+
+    <div class="auth-card" id="authCard">
+      <div id="loginBox">
+        <div class="auth-title">Se connecter — MathPlus</div>
+        <div class="auth-sub">Bienvenue — entrez vos identifiants</div>
+        <div class="input-box"><input id="loginUsername" placeholder="Nom d’utilisateur" type="text" autocomplete="username"></div>
+        <div class="input-box"><input id="loginPassword" placeholder="Mot de passe" type="password" autocomplete="current-password"></div>
+        <button class="auth-btn" id="loginBtn" onclick="login()">Se connecter</button>
+        <div class="link-small">Pas de compte ? <a onclick="showRegister()">Créer un compte</a></div>
+      </div>
+
+      <div id="registerBox" style="display:none;margin-top:8px">
+        <div class="auth-title">Créer un compte — MathPlus</div>
+        <div class="auth-sub">Inscrivez-vous gratuitement</div>
+        <div class="input-box"><input id="regUsername" placeholder="Nom d’utilisateur" type="text" autocomplete="username"></div>
+        <div class="input-box"><input id="regPassword" placeholder="Mot de passe" type="password" autocomplete="new-password"></div>
+        <div class="input-box"><input id="regEmail" placeholder="Email" type="email" autocomplete="email"></div>
+        <button class="auth-btn" onclick="register()">S’inscrire</button>
+        <div class="link-small">Déjà inscrit ? <a onclick="showLogin()">Se connecter</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app" aria-hidden="true">
+    <div class="app-wrap" role="application">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="logo">M+</div>
+          <div>
+            <div class="title">MathPlus</div>
+            <div class="sub">Niveau: Troisième Collège</div>
+          </div>
+        </div>
+        <nav class="nav" id="nav"></nav>
+        <div style="flex:1"></div>
+        <button class="auth-btn" id="logoutBtn" style="width:100%;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.03)" onclick="logout()">Se déconnecter</button>
+        <button class="auth-btn" style="width:100%;margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:#fff" onclick="backToLogin()">Retour à la connexion</button>
+      </aside>
+
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="page-title" id="pageTitle">Les équations</div>
+            <div class="desc" id="pageDesc">Comprendre et résoudre des équations linéaires étape par étape</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;font-size:13px;color:rgba(255,255,255,0.88)" id="welcomeUser">Bienvenue</div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div id="contentPanel"></div>
+
+          <div class="sidebar-right">
+            <div class="card">
+              <div class="stat">
+                <div class="num" id="progressCount">0</div>
+                <div class="label">Exercices corrects</div>
+              </div>
+              <div style="height:12px"></div>
+              <div class="label" style="text-align:left;color:rgba(255,255,255,0.8)">Progrès sauvegardé localement</div>
+            </div>
+
+            <div class="card">
+              <div style="font-weight:800;font-size:16px">Quiz rapide</div>
+              <div style="margin-top:10px;color:rgba(255,255,255,0.9)">Sélectionnez une réponse puis appuyez sur "Terminer".</div>
+              <div id="quickMCQ" style="margin-top:12px"></div>
+              <div style="margin-top:12px;display:flex;gap:8px">
+                <button class="auth-btn" onclick="submitQuick()">Terminer</button>
+                <button class="auth-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.04)" onclick="resetQuick()">Réinitialiser</button>
+              </div>
+            </div>
+
+            <div class="card footer">
+              Astuce : Essayez de résoudre avant d'utiliser "Vérifier". Les résultats sont stockés sur votre appareil.
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* -------------------- Safety & small helpers -------------------- */
+(function safeInit(){
+  // Ensure loginScreen visible by default (in case JS errors occur later)
+  try{ document.getElementById('loginScreen').classList.remove('hidden'); }catch(e){}
+  // Prevent missing-element errors by providing no-op functions until real ones defined
+  window.showRegister = window.showRegister || function(){ document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; };
+  window.showLogin = window.showLogin || function(){ document.getElementById('registerBox').style.display='none'; document.getElementById('loginBox').style.display='block'; };
+})();
+
+/* ================= SOUNDS using WebAudio ================= */
+const audioStateKey = 'mathplus_audio_muted_v5';
+let audioCtx = null;
+let isMuted = false;
+
+function ensureAudio(){
+  if(audioCtx) return;
+  try{ const AudioContext = window.AudioContext || window.webkitAudioContext; audioCtx = new AudioContext(); }catch(e){ console.warn('Audio not supported', e); }
+}
+
+function playTone(type='ding'){
+  if(isMuted) return;
+  try{
+    ensureAudio();
+    const now = audioCtx.currentTime;
+    if(type==='correct'){
+      const o = audioCtx.createOscillator(); const o2 = audioCtx.createOscillator(); const g = audioCtx.createGain(); const g2 = audioCtx.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(660, now); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.12, now+0.01); g.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+      o2.type='sine'; o2.frequency.setValueAtTime(990, now); g2.gain.setValueAtTime(0, now); g2.gain.linearRampToValueAtTime(0.06, now+0.01); g2.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+      const comp = audioCtx.createDynamicsCompressor();
+      o.connect(g); g.connect(comp); o2.connect(g2); g2.connect(comp); comp.connect(audioCtx.destination);
+      o.start(); o2.start(); o.stop(now+0.5); o2.stop(now+0.5); return;
+    }
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    if(type==='ding'){ o.type='sine'; o.frequency.setValueAtTime(880, now); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.14, now+0.01); g.gain.exponentialRampToValueAtTime(0.0001, now+0.6); }
+    else if(type==='wrong'){ o.type='sawtooth'; o.frequency.setValueAtTime(240, now); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.08, now+0.01); g.gain.exponentialRampToValueAtTime(0.0001, now+0.35); }
+    else if(type==='logout'){ o.type='sine'; o.frequency.setValueAtTime(420, now); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.1, now+0.01); g.gain.exponentialRampToValueAtTime(0.0001, now+0.45); }
+    else { o.type='sine'; o.frequency.setValueAtTime(660, now); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.08, now+0.01); g.gain.exponentialRampToValueAtTime(0.0001, now+0.4); }
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(now+0.6);
+  }catch(e){ console.warn('Audio error', e); }
+}
+
+function setMuted(val){
+  isMuted = Boolean(val);
+  localStorage.setItem(audioStateKey, JSON.stringify(isMuted));
+  const btn = document.getElementById('audioToggle'); const icon = document.getElementById('audioIcon');
+  if(isMuted){ btn.classList.add('muted'); icon.textContent='🔇'; } else { btn.classList.remove('muted'); icon.textContent='🔈'; btn.classList.add('pulse'); setTimeout(()=>btn.classList.remove('pulse'),400); }
+}
+
+/* ================= DATA & KEYS ================= */
+const lessons = {
+  1: { title:'Les équations', desc:'Résoudre des équations linéaires à une inconnue — entraînez-vous à isoler x.', content:[
+    { type:'text', text:'Exemple : 2x + 5 = 17 → 2x = 12 → x = 6' },
+    { type:'exercise', id:'1-1', q:'Résous : 3x - 4 = 11', answer:'5' },
+    { type:'exercise', id:'1-2', q:'Résous : 5x + 2 = 27', answer:'5' },
+    { type:'exercise', id:'1-3', q:'La moitié d’un nombre + 7 = 15. Quel est le nombre ?', answer:'16' },
+    { type:'mcq', id:'1-m1', q:'Quelle est la valeur de x si 2x = 14 ?', choices:['6','7','8','5'], answer:1 }
+  ]},
+  2: { title:'Les pourcentages', desc:'Calculer les pourcentages et leurs applications.', content:[
+    { type:'text', text:'20% de 150 = 0.2 × 150 = 30' },
+    { type:'exercise', id:'2-1', q:'Quel est 25% de 80 ?', answer:'20' },
+    { type:'exercise', id:'2-2', q:'Si 15% d’un nombre = 30, quel est le nombre ?', answer:'200' },
+    { type:'mcq', id:'2-m1', q:'10% de 250 = ?', choices:['15','25','20','30'], answer:1 }
+  ]},
+  3: { title:'Les aires', desc:'Aires des figures simples : rectangle, carré, triangle.', content:[
+    { type:'text', text:'Aire du rectangle = longueur × largeur' },
+    { type:'exercise', id:'3-1', q:'Aire d’un rectangle de 7 par 4 = ?', answer:'28' },
+    { type:'exercise', id:'3-2', q:'Aire d’un triangle base 10 et hauteur 6 = ?', answer:'30' },
+    { type:'mcq', id:'3-m1', q:'Aire d’un carré de côté 5 = ?', choices:['10','20','25','30'], answer:2 }
+  ]},
+  4: { title:'Les fractions', desc:'Simplification, addition et conversion de fractions.', content:[
+    { type:'text', text:'Addition de fractions : mettez les dénominateurs au même puis additionnez les numérateurs.'},
+    { type:'exercise', id:'4-1', q:'Calculez : 1/2 + 1/3 = ? (écrire fraction simplifiée)', answer:'5/6' },
+    { type:'exercise', id:'4-2', q:'Convertir 3/4 en pourcentage', answer:'75%' },
+    { type:'mcq', id:'4-m1', q:'Simplifier 4/8 = ?', choices:['1/2','2/4','1/4','3/8'], answer:0 }
+  ]},
+  5: { title:'Racines & carrés', desc:'Racines carrées et carrés des nombres.', content:[
+    { type:'text', text:'√49 = 7 car 7×7 = 49' },
+    { type:'exercise', id:'5-1', q:'Quel est √81 ?', answer:'9' },
+    { type:'exercise', id:'5-2', q:'Quel est le carré de 12 ?', answer:'144' },
+    { type:'mcq', id:'5-m1', q:'Le carré parfait le plus proche de 50 est ?', choices:['49','36','64','81'], answer:0 }
+  ]},
+  6: { title:'Les inéquations', desc:'Résolution des inéquations simples et interprétation.', content:[
+    { type:'text', text:'Exemple : 2x + 3 < 11 → 2x < 8 → x < 4' },
+    { type:'exercise', id:'6-1', q:'Résoudre : x - 5 > 2', answer:'x>7|7' },
+    { type:'exercise', id:'6-2', q:'Résoudre : 3x ≤ 12', answer:'x<=4|4' },
+    { type:'mcq', id:'6-m1', q:'Quand x est-il plus grand que 3 ? Choisissez la bonne option.', choices:['x>3','x<3','x=3','x≤3'], answer:0 }
+  ]},
+  7: { title:'Géométrie & angles', desc:'Angles, triangles et leurs propriétés.', content:[
+    { type:'text', text:'La somme des angles d’un triangle = 180°' },
+    { type:'exercise', id:'7-1', q:'Deux angles d’un triangle : 50° et 60°. Le troisième ?', answer:'70' },
+    { type:'exercise', id:'7-2', q:'Deux angles supplémentaires ont une somme de 180°. Si l’un est 110°, l’autre ?', answer:'70' },
+    { type:'mcq', id:'7-m1', q:'Dans un triangle isocèle, quelles sont les angles égaux ?', choices:['Les côtés de la base','Les angles à la base','Les angles au sommet','Aucun'], answer:1 }
+  ]}
+};
+
+const USER_KEY = 'mathplus_user_v5';
+const PROG_KEY = 'mathplus_prog_v5';
+const QUIZ_KEY = 'mathplus_quiz_v5';
+
+/* ----- Auth & transitions ----- */
+function showRegister(){ document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
+function showLogin(){ document.getElementById('registerBox').style.display='none'; document.getElementById('loginBox').style.display='block'; }
+
+function _playEntryAnimations(){
+  try{
+    const sheen = document.getElementById('bgSheen'); if(sheen) sheen.style.opacity = '1';
+    const spot = document.getElementById('spotlight'); if(spot) spot.style.opacity = '0.95';
+    const auth = document.getElementById('authCard'); auth.style.animation = 'none'; void auth.offsetWidth; auth.style.animation = 'cardIn .92s cubic-bezier(.2,.9,.2,1) forwards';
+    document.querySelectorAll('.login-bubble').forEach((b,i)=>{ b.style.animation = 'none'; b.style.opacity = '0'; void b.offsetWidth; b.style.animation = `rise ${12 + Math.random()*10}s linear infinite`; b.style.animationDelay = (0.18 * i) + 's'; });
+    // gentle chime on first open if not muted
+    setTimeout(()=> playTone('ding'), 420);
+  }catch(e){ console.warn('Entry animation failed', e); }
+}
+
+/* ----- Register/Login ----- */
+function register(){ const u=document.getElementById('regUsername').value.trim(); const p=document.getElementById('regPassword').value.trim(); const e=document.getElementById('regEmail').value.trim(); if(!u||!p||!e){ alert('Veuillez remplir tous les champs'); return; } localStorage.setItem(USER_KEY, JSON.stringify({username:u,password:p,email:e})); alert('Compte créé avec succès !'); showLogin(); }
+
+function login(){ const u=document.getElementById('loginUsername').value.trim(); const p=document.getElementById('loginPassword').value.trim(); const stored = JSON.parse(localStorage.getItem(USER_KEY)); if(stored && u===stored.username && p===stored.password){ try{ const auth=document.getElementById('authCard'); auth.classList.add('fadeOutZoom'); document.getElementById('spotlight').style.opacity='0'; document.getElementById('bgSheen').style.opacity='0.25'; document.querySelectorAll('.login-bubble').forEach(b=>b.style.opacity='0'); playTone('ding'); setTimeout(()=>{ document.getElementById('loginScreen').classList.add('hidden'); startApp(stored.username); }, 620); }catch(e){ console.error(e); startApp(stored.username); } } else { playTone('wrong'); alert('Nom d’utilisateur ou mot de passe invalide !'); } }
+
+/* ----- Logout restore + sound ----- */
+function logout(){ playTone('logout'); try{ const app=document.getElementById('app'); app.style.display='none'; app.setAttribute('aria-hidden','true'); const loginScreen=document.getElementById('loginScreen'); loginScreen.classList.remove('hidden'); const sheen=document.getElementById('bgSheen'); if(sheen) sheen.style.opacity='1'; const spot=document.getElementById('spotlight'); if(spot) spot.style.opacity='0.95'; const auth=document.getElementById('authCard'); auth.classList.remove('fadeOutZoom'); auth.style.animation='none'; auth.style.opacity='0'; auth.style.transform='translateY(18px) scale(.98)'; void auth.offsetWidth; setTimeout(()=>{ auth.style.animation='cardIn .92s cubic-bezier(.2,.9,.2,1) forwards'; },80); document.querySelectorAll('.login-bubble').forEach((b,i)=>{ b.style.animation='none'; void b.offsetWidth; b.style.animation = `rise ${12 + Math.random()*10}s linear infinite`; b.style.animationDelay = (0.15 * i) + 's'; b.style.opacity='1'; }); const bg=document.getElementById('bgPlate'); if(bg) bg.style.transform='translate(0px,0px)'; }catch(e){ console.warn('Logout restore failed', e); } }
+
+/* ----- App UI rendering & storage ----- */
+function loadProgress(){ const raw=localStorage.getItem(PROG_KEY); return raw?JSON.parse(raw):{} }
+function saveProgress(id,payload){ const d=loadProgress(); d[id]=Object.assign({},d[id]||{},payload); localStorage.setItem(PROG_KEY, JSON.stringify(d)); }
+function clearProgress(){ localStorage.removeItem(PROG_KEY); }
+
+const nav = document.getElementById('nav');
+const contentPanel = document.getElementById('contentPanel');
+const pageTitle = document.getElementById('pageTitle');
+const pageDesc = document.getElementById('pageDesc');
+const progressCountEl = document.getElementById('progressCount');
+const welcomeUserEl = document.getElementById('welcomeUser');
+let selectedLesson=1;
+
+function startApp(username){ try{ document.getElementById('app').style.display='block'; document.getElementById('app').classList.add('fadeInUp'); document.getElementById('app').removeAttribute('aria-hidden'); welcomeUserEl.textContent=`Bienvenue, ${username}`; buildNav(); renderLesson(1); renderQuick(); updateProgressUI(); }catch(e){ console.error('startApp failed', e); } }
+
+function buildNav(){ try{ const navEl=document.getElementById('nav'); navEl.innerHTML=''; Object.keys(lessons).forEach(k=>{ const b=document.createElement('button'); b.textContent=`${k}. ${lessons[k].title}`; b.dataset.lesson=k; b.onclick=()=>renderLesson(k); if(Number(k)===1) b.classList.add('active'); navEl.appendChild(b); }); }catch(e){ console.warn('buildNav failed', e); } }
+
+function renderLesson(id){ try{ selectedLesson=Number(id); [...document.getElementById('nav').querySelectorAll('button')].forEach(b=> b.classList.toggle('active', Number(b.dataset.lesson)===selectedLesson)); const l=lessons[id]; pageTitle.textContent=`${id}. ${l.title}`; pageDesc.textContent=l.desc||''; contentPanel.innerHTML=''; const intro=document.createElement('div'); intro.className='card'; intro.innerHTML=`<div class="lesson-title">${l.title}</div><div class="lesson-desc">${l.desc}</div>`; contentPanel.appendChild(intro); l.content.forEach(item=>{ if(item.type==='text'){ const t=document.createElement('div'); t.className='card'; t.innerHTML=`<div style="font-weight:700;color:#eef4ff">${item.text}</div>`; contentPanel.appendChild(t); } else if(item.type==='exercise'){ const ex=document.createElement('div'); ex.className='card exercise'; ex.dataset.id=item.id; ex.innerHTML=`<div class="q">${item.q}</div><div class="hint">Écrivez la réponse puis cliquez sur "Vérifier"</div><div class="input-answer"><input type="text" placeholder="Votre réponse" class="answer-input" /><button class="check" onclick="checkExercise('${item.id}')">Vérifier</button></div><div class="feedback" id="fb-${item.id}"></div>`; contentPanel.appendChild(ex); } else if(item.type==='mcq'){ const mc=document.createElement('div'); mc.className='card'; mc.style.marginTop='12px'; mc.innerHTML=`<div style="font-weight:800;color:#eef4ff">${item.q}</div>`; const opts=document.createElement('div'); opts.className='mcq'; item.choices.forEach((c,ci)=>{ const o=document.createElement('div'); o.className='option'; o.textContent=c; o.addEventListener('click', ()=>{ opts.querySelectorAll('.option').forEach(x=>x.classList.remove('selected')); o.classList.add('selected'); saveProgress(item.id,{type:'mcq',choice:ci,correct:ci===item.answer}); updateProgressUI(); }); opts.appendChild(o); }); mc.appendChild(opts); contentPanel.appendChild(mc); } }); restoreLessonAnswers(id); }catch(e){ console.warn('renderLesson error', e); } }
+
+function checkExercise(id){ try{ let correct=null; for(const k in lessons){ const it=lessons[k].content.find(x=>x.id===id); if(it){ correct=it.answer; break; } } if(correct===null) return; const input=document.querySelector(`[data-id="${id}"] .answer-input`); if(!input) return; const val=input.value.trim(); const fbEl=document.getElementById('fb-'+id); let ok=false; if(!isNaN(correct) && !isNaN(val) && val!=='') ok = Number(val)===Number(correct); else { if(String(correct).toLowerCase()===String(val).toLowerCase()) ok=true; if(String(correct).includes('|')){ const parts=String(correct).split('|').map(x=>x.trim().toLowerCase()); if(parts.includes(val.toLowerCase())) ok=true; } } if(ok){ fbEl.textContent='✅ Correct'; fbEl.style.color='#9ef59e'; playTone('correct'); } else { fbEl.textContent='❌ Incorrect — Réessayez'; fbEl.style.color='#ffb3b3'; playTone('wrong'); } saveProgress(id,{type:'exercise',value:val,ok}); updateProgressUI(); }catch(e){ console.warn('checkExercise failed', e); } }
+
+function restoreLessonAnswers(lessonId){ try{ const data=loadProgress(); const list=lessons[lessonId].content; list.forEach(item=>{ if(item.type==='exercise'){ const exEl=document.querySelector(`[data-id="${item.id}"]`); if(!exEl) return; const input=exEl.querySelector('.answer-input'); const fbEl=document.getElementById('fb-'+item.id); if(data[item.id]){ if(input) input.value=data[item.id].value||''; if(fbEl){ if(data[item.id].ok){ fbEl.textContent='✅ Correct'; fbEl.style.color='#9ef59e'; } else if(data[item.id].value){ fbEl.textContent='❌ Incorrect — Réessayez'; fbEl.style.color='#ffb3b3'; } } } } else if(item.type==='mcq'){ const saved=data[item.id]; if(saved && typeof saved.choice!=='undefined'){ const mcqs=Array.from(document.querySelectorAll('.mcq')); mcqs.forEach(mcq=>{ if(mcq.closest('.card') && mcq.closest('.card').textContent.includes(item.q)){ const opts=mcq.querySelectorAll('.option'); opts.forEach((o,idx)=>{ if(idx===saved.choice) o.classList.add('selected'); else o.classList.remove('selected'); }); } }); } } }); }catch(e){ console.warn('restoreLessonAnswers failed', e); } }
+
+function updateProgressUI(){ try{ const data=loadProgress(); let correctCount=0; for(const k in data){ if(data[k] && data[k].ok) correctCount++; if(data[k] && data[k].type==='mcq' && data[k].correct) correctCount++; } progressCountEl.textContent=correctCount; }catch(e){ console.warn('updateProgressUI failed', e); } }
+
+/* Quick quiz functions */
+const quickQuestions = [
+  { q:'Quel est le produit de 7 × 6 ?', choices:['42','36','48','40'], answer:0 },
+  { q:'√81 = ?', choices:['8','9','7','6'], answer:1 },
+  { q:'10% de 200 = ?', choices:['10','20','2','200'], answer:1 }
+];
+function renderQuick(){ try{ const quickMCQEl = document.getElementById('quickMCQ'); if(!quickMCQEl) return; quickMCQEl.innerHTML=''; quickQuestions.forEach((qq,i)=>{ const wrap=document.createElement('div'); wrap.style.marginBottom='10px'; const qTitle=document.createElement('div'); qTitle.style.fontWeight='700'; qTitle.textContent=(i+1)+'. '+qq.q; wrap.appendChild(qTitle); const choicesWrap=document.createElement('div'); choicesWrap.style.marginTop='8px'; qq.choices.forEach((c,ci)=>{ const op=document.createElement('div'); op.className='option'; op.textContent=c; op.style.marginTop='6px'; op.addEventListener('click', ()=>{ Array.from(choicesWrap.children).forEach(x=>x.classList.remove('selected')); op.classList.add('selected'); const saved=JSON.parse(localStorage.getItem(QUIZ_KEY) || '{}'); saved[i]=ci; localStorage.setItem(QUIZ_KEY, JSON.stringify(saved)); }); choicesWrap.appendChild(op); }); wrap.appendChild(choicesWrap); quickMCQEl.appendChild(wrap); }); }catch(e){ console.warn('renderQuick failed', e); } }
+function submitQuick(){ const saved=JSON.parse(localStorage.getItem(QUIZ_KEY) || '{}'); let sc=0; quickQuestions.forEach((q,i)=>{ if(typeof saved[i] !== 'undefined' && saved[i]===q.answer) sc++; }); alert(`Votre score : ${sc} / ${quickQuestions.length}`); }
+function resetQuick(){ localStorage.removeItem(QUIZ_KEY); renderQuick(); }
+
+/* init bubbles and parallax */
+document.querySelectorAll('.login-bubble').forEach((b,idx)=>{ const px=5+Math.random()*85; const py=55+Math.random()*30; b.style.left=px+'%'; b.style.top=py+'%'; b.style.opacity=0; b.style.animationDelay=(idx*0.18)+'s'; });
+const bg = document.getElementById('bgPlate'); const spotlight = document.getElementById('spotlight');
+document.addEventListener('mousemove', e=>{ try{ const x=(e.clientX / window.innerWidth - 0.5) * 20; const y=(e.clientY / window.innerHeight - 0.5) * 14; if(bg) bg.style.transform = `translate(${x}px, ${y}px)`; if(spotlight){ const sx=(e.clientX / window.innerWidth) * 100; const sy=(e.clientY / window.innerHeight) * 100; spotlight.style.setProperty('--sx', sx+'%'); spotlight.style.setProperty('--sy', sy+'%'); } }catch(e){} });
+
+/* audio toggle behavior and persistence */
+const audioToggle = document.getElementById('audioToggle');
+audioToggle.addEventListener('click', ()=>{ try{ ensureAudio(); setMuted(!isMuted); }catch(e){ console.warn('audio toggle failed', e); } });
+
+/* load state and start animations */
+window.addEventListener('load', ()=>{ try{ const saved = JSON.parse(localStorage.getItem(audioStateKey) || 'false'); setMuted(saved); setTimeout(()=>{ document.getElementById('bgSheen').style.opacity = '1'; document.getElementById('spotlight').style.opacity = '0.95'; }, 260); setTimeout(()=>{ _playEntryAnimations(); }, 320); const storedUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null'); if(storedUser) document.getElementById('loginUsername').value = storedUser.username || ''; buildNav(); renderQuick(); updateProgressUI(); // safe focus on username for faster login
+  try{ document.getElementById('loginUsername').focus(); }catch(e){} }catch(e){ console.warn('load event failed', e); } });
+
+/* ensure audio unlock on first gesture */
+(function initAudioUI(){ document.addEventListener('click', function unlock(){ ensureAudio(); document.removeEventListener('click', unlock); }, { once:true }); })();
+
+/* keyboard shortcuts */
+try{ document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); }); document.getElementById('regPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') register(); }); }catch(e){}
+
+/* safe global error handler to restore login screen if anything crashes */
+window.addEventListener('error', function(ev){ try{ document.getElementById('loginScreen').classList.remove('hidden'); const auth=document.getElementById('authCard'); if(auth){ auth.style.opacity='1'; auth.style.transform='translateY(0) scale(1)'; } }catch(e){} console.error('Unhandled error', ev.error); });
+
+</script>
+
+<!-- START: v5_best additions -->
+<style>
+/* Footer fixed glassy */
+#mpFooter{
+  position:fixed; left:14px; right:14px; bottom:8px; z-index:9998;
+  display:flex; align-items:center; justify-content:center;
+  padding:10px 14px; border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.04); backdrop-filter: blur(10px) saturate(120%);
+  color: #fff; font-weight:600; font-size:13px; opacity:0.95;
+  box-shadow: 0 12px 48px rgba(2,6,23,0.45);
+}
+#mpFooter .dot{margin-right:8px;font-size:14px}
+#mpFooter .devNames{font-style:italic; font-weight:700; background:linear-gradient(90deg,#9b59ff,#ffd36b); -webkit-background-clip:text; color:transparent}
+/* Novel exercise button under exercises */
+.novel-inline-btn{
+  margin-top:10px; display:inline-flex; gap:8px; align-items:center;
+  padding:8px 12px; border-radius:12px; cursor:pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.06); color:#fff; font-weight:700;
+  box-shadow: 0 8px 28px rgba(2,6,23,0.45);
+}
+.novel-inline-btn:hover{ transform: translateY(-3px); transition: transform .18s ease; }
+/* small inline popup */
+.novel-inline-popup{ margin-top:10px; padding:12px; border-radius:10px; background:linear-gradient(180deg, rgba(7,8,11,0.92), rgba(20,22,30,0.88)); border:1px solid rgba(255,255,255,0.04); box-shadow:0 18px 60px rgba(2,6,23,0.6) }
+.novel-inline-popup .q{font-weight:800; margin-bottom:8px}
+.novel-inline-popup .row{display:flex; gap:8px; align-items:center}
+.novel-feedback{margin-top:8px; font-weight:700}
+/* subtle particle effect for login screen */
+.v5-particles{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.12; mix-blend-mode:screen; }
+</style>
+
+<!-- Footer (fixed & transparent) -->
+<div id="mpFooter" aria-hidden="false">
+  <div class="dot">🌐</div>
+  <div class="devNames">The website developed by Adam Hassis, Abd Rahman Saghiri &amp; Ayman Bourgig</div>
+</div>
+
+<!-- light particles layer (very subtle) -->
+<svg class="v5-particles" width="100%" height="100%" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="g1"><stop offset="0" stop-color="#5a8aff"/><stop offset="1" stop-color="transparent"/></radialGradient></defs>
+  <circle cx="8%" cy="18%" r="220" fill="url(#g1)"></circle>
+  <circle cx="82%" cy="78%" r="260" fill="#aa62ff" fill-opacity="0.06"></circle>
+</svg>
+
+<script>
+// v5_best: remove any top audio toggle element if present (keep sounds always on)
+try{
+  // remove nodes with id containing 'audio' to avoid mute control
+  document.querySelectorAll('[id*="audio"]').forEach(n=>n.remove());
+  // force audio unmuted if set by existing code
+  if(window.hasOwnProperty('isMuted')) window.isMuted = false;
+  // override setMuted to a no-op to prevent future mutes (if exists)
+  window.setMuted = function(v){ window.isMuted = false; try{ localStorage.setItem('mathplus_audio_muted_v5', JSON.stringify(false)); }catch(e){} };
+} catch(e){ console.warn('v5_best audio cleanup', e); }
+
+// small generator helpers (simple exercises only)
+function v5_rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function v5_genSimple(){
+  const types = ['linear','percent','area','fraction'];
+  const t = types[v5_rand(0,types.length-1)];
+  if(t==='linear'){
+    const a=v5_rand(1,9), x=v5_rand(1,12), b=v5_rand(-8,8); const c=a*x+b;
+    return {type:'linear', q:`Résoudre : ${a}x ${b>=0?'+ '+b:'- '+Math.abs(b)} = ${c}`, ans:String(x)};
+  } else if(t==='percent'){
+    const base=v5_rand(20,200); const pct=[5,10,15,20,25][v5_rand(0,4)]; const val=Math.round(base*(pct/100)*100)/100;
+    return {type:'percent', q:`${pct}% de ${base} = ?`, ans:String(val)};
+  } else if(t==='area'){
+    const l=v5_rand(2,12), w=v5_rand(2,12); return {type:'area', q:`Aire rectangle ${l} × ${w} = ?`, ans:String(l*w)};
+  } else {
+    const a=v5_rand(1,5), b=v5_rand(1,5), c=v5_rand(1,5), d=v5_rand(1,5);
+    const num = a*d + c*b; const den = b*d;
+    return {type:'fraction', q:`Calculez : ${a}/${b} + ${c}/${d} = ? (fraction non simplifiée acceptée)`, ans:String(num+'/'+den)};
+  }
+}
+
+// attach novel buttons under exercises, but only show them after login
+function v5_attachNovelButtons(){
+  try{
+    const exercises = document.querySelectorAll('.exercise, .card.exercise, .exercise.card');
+    exercises.forEach((ex, idx)=>{
+      // avoid double insertion
+      if(ex.querySelector('.novel-inline-btn')) return;
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.className='novel-inline-btn';
+      btn.textContent = '🔄 Nouvel Exercice';
+      // inline popup container
+      const popup = document.createElement('div');
+      popup.className='novel-inline-popup';
+      popup.style.display='none';
+      popup.innerHTML = `<div class="q" data-q>Question</div><div class="row"><input placeholder="Votre réponse" data-input /><button class="btn" data-check>Vérifier</button></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-next>Suivant</button><button class="btn close" data-close>Fermer</button></div><div class="novel-feedback" data-fb></div>`;
+      // append button under exercise
+      ex.appendChild(btn);
+      ex.appendChild(popup);
+
+      // handlers
+      btn.addEventListener('click', ()=>{
+        // generate and show a simple question
+        const qobj = v5_genSimple();
+        popup.querySelector('[data-q]').textContent = qobj.q;
+        popup.querySelector('[data-input]').value='';
+        popup.querySelector('[data-fb]').textContent='';
+        popup.dataset.ans = qobj.ans;
+        popup.dataset.type = qobj.type;
+        popup.style.display='block'; try{ popup.querySelector('[data-input]').focus(); }catch(e){};
+        // play chime
+        try{ const AudioContext = window.AudioContext || window.webkitAudioContext; const ctx = new AudioContext(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(880,ctx.currentTime); g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.12,ctx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.5); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.5); setTimeout(()=>{ try{ ctx.close(); }catch(e){} },700); }catch(e){}
+      });
+      popup.querySelector('[data-close]').addEventListener('click', ()=>{ popup.style.display='none'; });
+      popup.querySelector('[data-next]').addEventListener('click', ()=>{ btn.click(); });
+      popup.querySelector('[data-check]').addEventListener('click', ()=>{
+        const val = popup.querySelector('[data-input]').value.trim();
+        const ans = popup.dataset.ans || '';
+        const fb = popup.querySelector('[data-fb]');
+        let ok = false;
+        if(popup.dataset.type === 'fraction'){
+          if(val.includes('/')) ok = val.replace(/\s/g,'') === ans.replace(/\s/g,'');
+          else { try{ ok = Math.abs(Number(eval(val)) - (eval(ans.split('/').join('/')))) < 0.001; }catch(e){ ok=false; } }
+        } else {
+          if(!isNaN(ans) && !isNaN(val) && val!=='') ok = Number(val) === Number(ans);
+          else ok = val.toLowerCase() === ans.toLowerCase();
+        }
+        if(ok){ fb.style.color = '#9ef59e'; fb.textContent = '✅ Correct — Bravo !'; try{ /* light correct chime */ const AudioContext = window.AudioContext || window.webkitAudioContext; const ctx = new AudioContext(); const o=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain(), g2=ctx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(660,ctx.currentTime); o2.type='sine'; o2.frequency.setValueAtTime(990,ctx.currentTime); g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.12,ctx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.5); g2.gain.setValueAtTime(0,ctx.currentTime); g2.gain.linearRampToValueAtTime(0.06,ctx.currentTime+0.01); g2.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.5); const c = ctx.createDynamicsCompressor(); o.connect(g); g.connect(c); o2.connect(g2); g2.connect(c); c.connect(ctx.destination); o.start(); o2.start(); o.stop(ctx.currentTime+0.5); o2.stop(ctx.currentTime+0.5); setTimeout(()=>{ try{ ctx.close(); }catch(e){} },800); }catch(e){} } else { fb.style.color='#ffb3b3'; fb.textContent='❌ Incorrect — Réessayez'; }
+      });
+    });
+  }catch(e){ console.warn('v5_attachNovelButtons failed', e); }
+}
+
+// Only show novel buttons after login: detect disappearance of login overlay or presence of welcome user text
+function v5_enableNovelOnLogin(){
+  // try to detect common login overlay ids or nodes
+  const loginOverlay = document.getElementById('loginOverlay') || document.getElementById('loginScreen') || null;
+  if(!loginOverlay){
+    // no overlay: assume already logged in -> attach immediately
+    v5_attachNovelButtons();
+    return;
+  }
+  // observe style changes to detect hide (login completed)
+  const obs = new MutationObserver((mut)=>{
+    try{
+      if(getComputedStyle(loginOverlay).display === 'none' || loginOverlay.classList.contains('hidden') || loginOverlay.hasAttribute('aria-hidden')){
+        v5_attachNovelButtons();
+        obs.disconnect();
+      }
+    }catch(e){}
+  });
+  obs.observe(loginOverlay, {attributes:true, attributeFilter:['style','class','aria-hidden']});
+  // also attach after a successful login click if exists
+  document.addEventListener('click', function onClick(e){
+    // heuristics: if the clicked element has text 'Se connecter' or id containing 'login'
+    const t = (e.target.innerText||'').toLowerCase();
+    if(t.includes('se connecter') || t.includes('se connecter') || (e.target.id && e.target.id.toLowerCase().includes('login'))){
+      setTimeout(()=> v5_attachNovelButtons(), 700);
+      document.removeEventListener('click', onClick);
+    }
+  }, {once:true});
+}
+
+// run enable on load
+window.addEventListener('load', ()=>{ try{ v5_enableNovelOnLogin(); }catch(e){} });
+</script>
+<!-- END: v5_best additions -->
+</body>
+</html>
